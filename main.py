@@ -1,26 +1,28 @@
 import pymongo
 
 client = pymongo.MongoClient("mongodb://localhost:27017/")
-db = client["deine_datenbank"]
-collection = db["deine_sammlung"]
+db = client["spiele"]
+collection = db["pcgames"]
 
 help_text = """
     Games-Datenbank CLI - Befehlsübersicht:
-    Insert  -   insert "Titel","Erscheinungsjahr","Genre","Entwickler","Publisher","Plattformen","Bewertungssystem:Punkte, ..."
-    Read    -   read ""
-    Update  -   update "" to "",""
-    Remove  -   remove ""
-    Exit    -   exit
+    [] beschreibt Zusätzliche informationen die nur für den nutzer sind und nicht für das Programm
+    Insert          -   insert "Titel","Erscheinungsjahr","Downloads","FSK","Genre","Bewertung[x/10]"
+    Info            -   info "[Title to id]"
+    Read            -   read "[Title to id]"
+    Search          -   search "[Title to id]"
+    Test Connection -   test_connection
+    Update          -   update "[Title to id]","[field to change]","[new Value]"
+    Remove          -   remove "[Title to id]"
+    Exit            -   exit
     """
 
 #CRUD
 def create(game_data):
-    # Füge das Spiel in die Sammlung ein
     result = collection.insert_one(game_data)
     return result
 
 def read(title):
-    # Suche das Spiel in der Sammlung
     game = collection.find_one({"Titel": title})
     if game:
         return game  # Gibt das Spiel-Dokument zurück
@@ -37,29 +39,30 @@ def delete(title):
     result = collection.delete_one({"Titel": title})
     return result
 
+
 print(help_text)
 
 while True:
-    command = input("Bitte Befehl eingeben: ").strip()
+    command = input("Bitte Befehl eingeben: ").lower()
+    command, attributes = command.split(" ")
+    attributes = attributes.split(",")
+    for i in range(len(attributes)):
+        attributes[i] = attributes[i].strip('"')
 
-    if command.startswith("insert"):
-        # Beispiel: insert "Halo","2005","IMDB:5,rottentomatos:7"
-        content = command[len("insert "):].strip('"')
-        title, year, ratings = content.split('","')
-        ratings_dict = dict(rating.split(':') for rating in ratings.split(','))
-        game_data = {
-            "Titel": title,
-            "Erscheinungsjahr": int(year),
-            "Bewertungssystem": ratings_dict
-        }
-        print(create(game_data))
+    if command == "test_connection":
+        info = client.server_info()
+        print(info)
 
-    elif command.startswith("read"):
+    elif command == "insert":
+        pass
+
+
+    elif command[0] == "read":
         # Beispiel: read "Halo"
         title = command[len("read "):].strip('"')
         print(read(title))
 
-    elif command.startswith("update"):
+    elif command[0] == "update":
         # Beispiel: update "Halo" to "Halo 2","2007","IMDB:6,rottentomatos:8"
         content = command[len("update "):].strip('"')
         old_title, new_content = content.split(' to ')
@@ -72,12 +75,12 @@ while True:
         }
         print(update(old_title, new_game_data))
 
-    elif command.startswith("remove"):
+    elif command[0] == "remove":
         # Beispiel: remove "Halo"
         title = command[len("remove "):].strip('"')
         print(delete(title))
 
-    elif command.lower() == "exit":
+    elif command[0].lower() == "exit":
         print("Programm wird beendet.")
         break
 
