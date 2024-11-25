@@ -15,12 +15,15 @@ help_text = """
         genere
         rating
     
-    Insert          -   insert "Titel","Erscheinungsjahr"...
-    Search          -   search "[Feld zum identifizieren]"
     Test Connection -   test_connection
-    Update          -   update "[Feld zum identifizieren]","[Feld zum updaten]","[neuer Wert]"
-    Remove          -   remove "[Feld zum identifizieren]"
+    Insert          -   insert "Titel","Erscheinungsjahr"...
+    Search          -   search "[Titel zum identifizieren]"
+    Update          -   update "[Titel zum identifizieren]","[Feld zum updaten]","[neuer Wert]"
+    Remove          -   remove "[Titel zum identifizieren]"
     Exit            -   exit
+    
+    !!! Wichtiger Hinweis: Der Title wird zum identifizieren verwendet, falls er mehrfach vorkommt, 
+        werden alle identifizierten Beiträge bearbeitet.!!!
     """
 
 schluessel: list[str] = ["title", "erscheinungsjahr", "downloads", "fsk", "genre", "rating"]
@@ -54,18 +57,30 @@ while True:
 
     elif command == "search":
         kriterium = {"title": attributes[0]}
-        print(kriterium)
-        ergebnis = collection.find(kriterium)
+        ergebnis = list(collection.find(kriterium))
         if ergebnis:
-            print(ergebnis)
+            for element in ergebnis:
+                print(f"""
+                    ID: {element["_id"]}
+                    Title: {element["title"]}
+                    Erscheinungsjahr: {element["erscheinungsjahr"]}
+                    Altersfreigabe: {element["fsk"]}
+                    Gruppe: {element["genre"]}
+                    Rating: {element["rating"]}
+                """)
         else:
             print("Nicht gefunden.")
 
-    elif command[0] == "update":
-        pass
+    elif command == "update":
+        kriterium = {"title": attributes[0]}
+        update = {"$set":{attributes[1]: attributes[2]}}
+        ergebnis = collection.update_many(kriterium, update)
+        print("Erfolgreich" if ergebnis.acknowledged == True else "Nicht erfolgreich")
 
-    elif command[0] == "remove":
-        pass
+    elif command == "remove":
+        kriterium = {"title": attributes[0]}
+        ergebnis = collection.delete_many(kriterium)
+        print("Erfolgreich" if ergebnis.acknowledged == True else "Nicht erfolgreich")
 
     else:
         print(f"Ungültiger Befehl. Bitte versuche es erneut. {command} - {attributes}")
